@@ -231,4 +231,7 @@ If you like **compilers, RTOSes, and running code where it shouldn’t fit — w
 (⌐■_■)
 
 I have no idea what the fuck I am doing, rahhhh!
+
+Written for general use, maybe MimiC will become its own project, maybe I made it just to support my other project, Picomimi and AxisOS. Honestly, I don't really know. I just know what for whatever reason... Imma make this cursed thingy. Because I can.
+
 ---
