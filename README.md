@@ -1,196 +1,234 @@
 # MimiC
 
-**Deterministic, embeddable systems scripting language for microcontrollers**
+**On‑silicon ahead‑of‑time C compiler for microcontrollers**
+*(CircuitPython‑style workflow, native C performance)*
+(＾▽＾)
 
 ---
 
-## Overview
+## What is MimiC?
 
-MimiC is a **C-inspired, deterministic scripting language** designed to run on microcontrollers and embedded kernels like **Picomimi**, as well as RTOS environments such as FreeRTOS. It is small, portable, and hardware-aware, enabling live scripting on real hardware without unsafe code injection.
+**MimiC** is an **on-device, ahead-of-time (AOT) C compiler** for resource-constrained microcontrollers like the **RP2040 / RP2350**.
 
-Unlike traditional scripting languages that assume full operating systems or flat memory models, MimiC **respects resource ownership, deterministic memory, and kernel-managed execution**, making it ideal for:
+Instead of reflashing firmware for every change, you can:
 
-* microcontrollers with tight RAM and flash constraints
-* real-time capable kernels
-* safe execution of scripts without compromising system stability
+1. Write standard **C99** code
+2. Save it to an SD card
+3. Insert it into the device
+4. Compile and run **on the MCU itself**, instantly
 
----
+> MimiC also **saves compiled binaries back to the SD card**, so future runs can skip compilation entirely — no AOT delay required.
 
-## Project Goals
+No external toolchain. No interpreter. No reflashing loop.
 
-MimiC is designed with the following goals in mind:
-
-1. **Deterministic execution**
-
-   * Avoid undefined behavior and unsafe memory access
-   * Scripts cannot bypass kernel-managed resources
-
-2. **Kernel integration**
-
-   * Designed to work with kernels like Picomimi or FreeRTOS
-   * Exposes kernel services safely through a **host ABI**
-
-3. **Portability**
-
-   * Small, minimal runtime allows deployment across multiple MCU families
-   * Minimal dependencies beyond a C99-capable compiler
-
-4. **Scripting as first-class citizen**
-
-   * Scripts run live on hardware, enabling dynamic applications
-   * Allows building higher-level languages (Python, shell, DSLs) on top
-
-5. **Safety & resource ownership**
-
-   * Pins, timers, peripherals, and memory are fully managed
-   * Scripts cannot accidentally take over hardware or memory
-
-6. **Extensible standard library**
-
-   * Start with kernel-oriented primitives
-   * Expand to higher-level modules for tasks, I/O, and system integration
+Think *CircuitPython workflow*, but with **real C**, compiled to **native ARM machine code**.
 
 ---
 
-## Design Philosophy
+## Key Features
 
-MimiC’s philosophy is **“Big surface, small core”**:
+* Full **C99** support (not a toy language)
+* **On-silicon compilation** (no PC needed)
+* Native **ARM Thumb** machine code output
+* Direct access to **Pico SDK**: GPIO, I2C, SPI, PWM, DMA, USB, timers
+* **FreeRTOS-native** execution model
+* **SD card workflow**: source → compile → cache binary → future reload
+* Deterministic, fast compilation
+* Designed for **runtime-loaded applications**
 
-* The **core** is minimal: interpreter, deterministic memory, scheduling hooks, kernel ABI
-* The **surface** can be expanded: libraries, modules, shell integration, and higher-level scripting languages
-* Safety is enforced at the **core level**, letting users innovate without breaking the system
-
-Unlike full-blown embedded Python or CircuitPython, MimiC is **not a Python clone**. It is a **C-shaped systems language**, designed for:
-
-* **embedded scripting**
-* **hardware-aware automation**
-* **deterministic control**
-
----
-
-## Features (Planned / v0.1)
-
-* **C-inspired syntax**
-* **Expressions and control flow** (`if`, `while`, `for`)
-* **Functions with local variables**
-* **Kernel intrinsics** for resource-safe hardware access
-* **Deterministic memory model** (GC or region-based)
-* **Cooperative task support** (scheduler integration)
-* **Script loading / execution** at runtime
-* **Error handling with precise reporting**
-
-Future expansion may include:
-
-* Structs and arrays with bounds checking
-* Modules and import system
-* Higher-level scripting languages on top (Python, shell, DSLs)
-* REPL / live debugging
-* Optional unsafe modes for low-level hardware control
-
----
-
-## Architecture
-
-```
-Hardware (RP2040, STM32, etc.)
-        ↑
-Picomimi Kernel / RTOS
-        ↑
-MimiC Runtime / VM
-        ↑
-MimiC Language
-        ↑
-Shell / Higher-level languages (Python, DSLs)
-```
-
-* **Hardware**: the physical MCU peripherals
-* **Kernel / RTOS**: memory, scheduler, interrupts, peripheral ownership
-* **MimiC Runtime**: interpreter or bytecode VM, deterministic execution, GC hooks
-* **MimiC Language**: C-inspired syntax for safe scripting
-* **Shell / High-level languages**: optional scripting layers built on top
+(￣ー￣)ｂ
 
 ---
 
 ## Why MimiC Exists
 
-Running scripts directly on hardware is **dangerous and error-prone**. Traditional embedded scripting either:
+Typical embedded workflows force a trade-off:
 
-* exposes unsafe memory and hardware, or
-* is too heavy to run on small MCUs
+* **C/C++** → fast, full control, but reflashing is slow
+* **Python-like systems** → rapid iteration, but slow and limited
 
-MimiC solves this by providing a **safe, deterministic, embeddable language** with **first-class kernel integration**, enabling:
+MimiC removes this compromise:
 
-* live script execution
-* hardware automation# MimiC
-MimiC is a deterministic, embeddable systems-scripting language for microcontrollers. Designed for kernels like Picomimi and RTOS environments, it provides safe memory models, resource ownership, and real-time friendly execution while staying small, portable, and hardware-aware.
+* Native performance
+* Full SDK access
+* Rapid iteration **on hardware**
+* Persistent SD-card caching for instant reload
 
-* higher-level language layers without kernel hacks
-
-It’s a modern **replacement for DIY scripting languages**, optimized for small embedded systems.
-
----
-
-## Potential Use Cases
-
-* Live scripting on **microcontroller projects** without reflashing firmware
-* Building **safe, deterministic automation scripts**
-* Developing **embedded shell environments**
-* Running **Python-like languages** on tiny MCUs using MimiC as a substrate
-* Teaching **embedded systems, kernels, and interpreters**
+No VM. No slow interpreter. Just **real C running dynamically**.
 
 ---
 
-## Roadmap
+## How It Works
 
-**v0.1** – Core MVP
+```
+┌─────────────────────────────────────────────┐
+│ Write C source code                         │
+│ /sd/user/blink.c                            │
+└─────────────────────────────────────────────┘
+                 ↓
+┌─────────────────────────────────────────────┐
+│ Insert SD card / trigger compile            │
+└─────────────────────────────────────────────┘
+                 ↓
+┌─────────────────────────────────────────────┐
+│ MimiC compiler runs on MCU                  │
+│ • Parses C source                           │
+│ • Resolves SDK symbols                      │
+│ • Generates native ARM code                 │
+│ • Saves compiled binary to SD for future    │
+│   instant load                              │
+└─────────────────────────────────────────────┘
+                 ↓
+┌─────────────────────────────────────────────┐
+│ Code executes as FreeRTOS task              │
+│ No reflashing, no reboot loop               │
+└─────────────────────────────────────────────┘
+```
 
-* Minimal interpreter for expressions, functions, and control flow
-* Kernel integration primitives (GPIO, timers, sleep)
-* Deterministic memory (GC or region-based)
-* Cooperative task support
+Compilation happens **once per change**, then the temporary compiler state is freed. Reloading from SD card skips compilation entirely.
 
-**v0.2 – v1.0**
+---
 
-* Full module system
-* Structs, arrays, and safer pointer abstractions
-* REPL / live debugging
-* Optional unsafe mode for advanced users
-* Higher-level scripting language support (Python/shell layer)
+## Example
 
-**v2+**
+```c
+#include <pico/stdlib.h>
+#include <FreeRTOS.h>
+#include <task.h>
 
-* Multi-platform support (FreeRTOS, STM32, ESP32, RP2040)
-* Advanced resource and concurrency management
-* Extended standard library
+void blink_task(void *params) {
+    gpio_init(25);
+    gpio_set_dir(25, GPIO_OUT);
+
+    while (1) {
+        gpio_put(25, 1);
+        vTaskDelay(pdMS_TO_TICKS(500));
+        gpio_put(25, 0);
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+}
+
+int main(void) {
+    stdio_init_all();
+    xTaskCreate(blink_task, "blink", 256, NULL, 1, NULL);
+    vTaskStartScheduler();
+    return 0;
+}
+```
+
+Save to SD card, compile, and run. The compiled binary is cached for instant execution next time.
+
+(｀・ω・´)
+
+---
+
+## Architecture Overview
+
+### Flash (XIP)
+
+* FreeRTOS kernel
+* Precompiled Pico SDK
+* TCC compiler runtime
+* Static SDK symbol table
+* MimiC control runtime
+
+### RAM
+
+* FreeRTOS stacks and heaps
+* Temporary compiler state (freed after compile)
+* Compiled user code
+* User application heap
+
+### SD Card
+
+* `/user/` — application source files
+* `/include/` — simplified SDK headers
+* `/examples/` — sample programs
+* `/bin/` — cached compiled binaries for instant reload
+
+---
+
+## Compiler Choice
+
+**MimiC uses Tiny C Compiler (TCC).**
+
+**Why TCC?**
+
+* Full C99 support
+* Extremely fast compilation
+* Small footprint
+* Simple, hackable codebase
+* Proven ARM backend
+
+MimiC focuses on **running a real compiler on a microcontroller** — not reinventing C.
+
+(￣︶￣)
+
+---
+
+## Symbol Resolution Model
+
+The Pico SDK is **precompiled** and stored in flash.
+
+MimiC builds a static symbol table:
+
+```c
+{"gpio_put",    (void*)0x10000DEF}
+{"vTaskDelay", (void*)0x10001234}
+```
+
+User code calls these addresses directly — **no dynamic linker**, **no relocation**.
+Compilation is fast and memory usage is predictable.
+
+---
+
+## Design Principles
+
+1. SDK code is immutable
+2. User code is replaceable at runtime
+3. Compilation is **one-shot**
+4. No background JIT or interpreter
+5. Failure modes are explicit
+
+MimiC is **infrastructure**, not a scripting toy.
+
+---
+
+## Comparison
+
+| System        | Language | Execution   | Speed  | Toolchain Required |
+| ------------- | -------- | ----------- | ------ | ------------------ |
+| MimiC         | C99      | AOT native  | Fast   | No (after flash)   |
+| CircuitPython | Python   | Interpreter | Slow   | No                 |
+| MicroPython   | Python   | Bytecode VM | Medium | No                 |
+| Arduino       | C++      | Native      | Fast   | Yes                |
+
+---
+
+## Use Cases
+
+* Rapid embedded prototyping
+* Education and systems learning
+* Field-reconfigurable devices
+* Research on embedded compilation
+* MicroOS-style runtime application loading
 
 ---
 
 ## License
 
-MimiC is released under the **MIT License**, encouraging adoption, embedding, and modification while keeping attribution to the original project.
+* MimiC: MIT License
+* TCC: LGPL v2.1 (runtime exempt)
 
 ---
 
-## Contribution
+## Status
 
-Contributors are welcome! Goals for contributions:
+MimiC is experimental and unapologetically low-level.
 
-* Improving kernel integration
-* Expanding standard library primitives
-* Language design/syntax proposals
-* Porting to new microcontrollers and RTOSes
+If you like **compilers, RTOSes, and running code where it shouldn’t fit — welcome**.
 
----
+(⌐■_■)
 
-## Contact / Discussion
-
-Ah. 
-
----
-
-### TL;DR
-
-> **MimiC is a small, safe, deterministic, embeddable scripting language for microcontrollers.**
-> Build live scripts, shell layers, or higher-level languages on top — all while keeping your kernel and hardware safe.
-
+I have no idea what the fuck I am doing, rahhhh!
 ---
